@@ -11,7 +11,7 @@ WORKDIR /statping
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/${VERSION}/frontend/package.json .
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v0.91.0/frontend/yarn.lock .
 RUN yarn install --pure-lockfile --network-timeout 1000000
-ADD https://github.com/statping-ng/statping-ng/tree/${VERSION}:frontend .
+ADD https://github.com/statping-ng/statping-ng.git#${VERSION}:frontend .
 RUN yarn build && yarn cache clean
 
 # Statping Golang BACKEND building from source
@@ -40,7 +40,7 @@ RUN go get github.com/stretchr/testify/assert && \
 	go get github.com/GeertJohan/go.rice/rice && \
 	go get github.com/cortesi/modd/cmd/modd && \
 	go get github.com/crazy-max/xgo
-ADD git@github.com:statping-ng/statping-ng.git#${VERSION} .
+ADD https://github.com/statping-ng/statping-ng.git#${VERSION} .
 COPY --from=frontend /statping/dist/ ./source/dist/
 RUN make clean generate embed
 RUN go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=${VERSION} -X main.COMMIT=${COMMIT}" -o statping --tags "netgo linux" ./cmd
