@@ -9,7 +9,7 @@ ARG VERSION
 
 WORKDIR /statping
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/${VERSION}/frontend/package.json .
-ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v0.91.0/frontend/yarn.lock .
+ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/${VERSION}/frontend/yarn.lock .
 RUN yarn install --pure-lockfile --network-timeout 1000000
 ADD https://github.com/statping-ng/statping-ng.git#${VERSION}:frontend .
 RUN yarn build && yarn cache clean
