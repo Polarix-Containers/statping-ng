@@ -35,7 +35,7 @@ ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:cmd ./cmd
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:database ./database
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:handlers ./handlers
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:notifiers ./notifiers
-ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:source ./course
+ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:source ./sourse
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:types ./types
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:utils ./utils
 COPY --from=frontend /statping/dist/ ./source/dist/
