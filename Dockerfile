@@ -1,7 +1,6 @@
 ARG VERSION=0.91.0
-ARG COMMIT=https://github.com/statping-ng/statping-ng/commit/fb2243a316c33a4121cf1043486708cd592d59d8
 
-FROM node:16.14.0-alpine AS frontend
+FROM node:16-alpine AS frontend
 ARG VERSION
 
 WORKDIR /statping
@@ -32,11 +31,17 @@ ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSI
 RUN go mod download
 ENV GO111MODULE on
 ENV CGO_ENABLED 1
-ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:{cmd,database,handlers,notifiers,source,types,utils} ./cmd
+ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:cmd ./cmd
+ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:database ./database
+ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:handlers ./handlers
+ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:notifiers ./notifiers
+ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:source ./course
+ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:types ./types
+ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:utils ./utils
 COPY --from=frontend /statping/dist/ ./source/dist/
 RUN go install github.com/GeertJohan/go.rice/rice@latest
 RUN cd source && rice embed-go
-RUN go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=$VERSION -X main.COMMIT=$COMMIT" -o statping --tags "netgo linux" ./cmd
+RUN go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=$VERSION" -o statping --tags "netgo linux" ./cmd
 RUN chmod a+x statping && mv statping /go/bin/statping
 # /go/bin/statping - statping binary
 # /root/sassc/bin/sassc - sass binary
