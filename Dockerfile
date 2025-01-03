@@ -1,50 +1,42 @@
-ARG VERSION=v0.91.0
-ARG COMMIT=https://github.com/statping-ng/statping-ng/commit/66a1adaa66acfa9615d5b8661e3c0320109731c3
+ARG VERSION=0.91.0
+ARG COMMIT=https://github.com/statping-ng/statping-ng/commit/fb2243a316c33a4121cf1043486708cd592d59d8
 
-FROM ghcr.io/statping-ng/statping-ng:0 AS extract
-
-FROM node:12.18.2-alpine AS frontend
-
+FROM node:16.14.0-alpine AS frontend
 ARG VERSION
 
 WORKDIR /statping
-ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/${VERSION}/frontend/package.json .
-ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/${VERSION}/frontend/yarn.lock .
+ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/package.json .
+COPY https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/yarn.lock .
 RUN yarn install --pure-lockfile --network-timeout 1000000
-ADD https://github.com/statping-ng/statping-ng.git#${VERSION}:frontend .
+COPY ./frontend .
 RUN yarn build && yarn cache clean
 
 # Statping Golang BACKEND building from source
 # Creates "/go/bin/statping" and "/usr/local/bin/sass" for copying
-FROM golang:alpine AS backend
-
+FROM golang:-alpine AS backend
 ARG VERSION
 ARG COMMIT
 
-RUN apk add --update --no-cache libstdc++ gcc g++ make git autoconf \
+RUN apk add --no-cache libstdc++ gcc g++ make git autoconf \
     libtool ca-certificates linux-headers wget curl jq && \
     update-ca-certificates
 
 WORKDIR /root
-RUN git clone https://github.com/sass/sassc.git
+RUN git clone --depth 1 --branch 3.6.2 https://github.com/sass/sassc.git
 RUN . sassc/script/bootstrap && make -C sassc -j4
 # sassc binary: /root/sassc/bin/sassc
 
 WORKDIR /go/src/github.com/statping-ng/statping-ng
-ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/${VERSION}/go.mod ./
-ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/${VERSION}/go.sum ./
+ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/go.mod .
+ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/go.sum .
 RUN go mod download
 ENV GO111MODULE on
 ENV CGO_ENABLED 1
-RUN go get github.com/stretchr/testify/assert && \
-    go get github.com/stretchr/testify/require && \
-	go get github.com/GeertJohan/go.rice/rice && \
-	go get github.com/cortesi/modd/cmd/modd && \
-	go get github.com/crazy-max/xgo
-ADD --keep-git-dir=true https://github.com/statping-ng/statping-ng.git#${VERSION} .
+ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:{cmd,database,handlers,notifiers,source,types,utils} ./cmd
 COPY --from=frontend /statping/dist/ ./source/dist/
-RUN make clean generate embed
-RUN go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=${VERSION} -X main.COMMIT=${COMMIT}" -o statping --tags "netgo linux" ./cmd
+RUN go install github.com/GeertJohan/go.rice/rice@latest
+RUN cd source && rice embed-go
+RUN go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=$VERSION -X main.COMMIT=$COMMIT" -o statping --tags "netgo linux" ./cmd
 RUN chmod a+x statping && mv statping /go/bin/statping
 # /go/bin/statping - statping binary
 # /root/sassc/bin/sassc - sass binary
