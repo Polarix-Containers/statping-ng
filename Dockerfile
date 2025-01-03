@@ -6,7 +6,7 @@ ARG VERSION
 
 WORKDIR /statping
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/package.json .
-COPY https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/yarn.lock .
+ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/yarn.lock .
 RUN yarn install --pure-lockfile --network-timeout 1000000
 COPY ./frontend .
 RUN yarn build && yarn cache clean
