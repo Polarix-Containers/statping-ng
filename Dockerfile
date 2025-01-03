@@ -8,7 +8,7 @@ WORKDIR /statping
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/package.json .
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/yarn.lock .
 RUN yarn install --pure-lockfile --network-timeout 1000000
-COPY ./frontend .
+ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:frontend .
 RUN yarn build && yarn cache clean
 
 # Statping Golang BACKEND building from source
