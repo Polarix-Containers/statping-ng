@@ -2,6 +2,9 @@ ARG VERSION=0.91.0
 ARG NODE=16
 ARG UID=3010
 ARG GID=3010
+ARG PORT=8080
+ARG STATPING_DIR=/app
+ARG BASE_PATH=""
 
 FROM node:${NODE}-alpine AS frontend
 ARG VERSION
@@ -39,34 +42,50 @@ ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:source ./source
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:types ./types
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:utils ./utils
 COPY --from=frontend /install/dist/ ./source/dist/
-RUN go install github.com/GeertJohan/go.rice/rice@latest
-RUN cd source && rice embed-go
-RUN go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=$VERSION" -o statping --tags "netgo linux" ./cmd
-RUN chmod a+x statping && mv statping /go/bin/statping
-# /go/bin/statping - statping binary
-# /statping - Vue frontend (from frontend)
+RUN go install github.com/GeertJohan/go.rice/rice@latest \
+    && cd source \
+    && rice embed-go \
+    && mkdir -p /install \
+    && go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=$VERSION" -o /install/statping --tags "netgo linux" ./cmd \
+    && chmod +x /install/statping
 
-# Statping main Docker image that contains all required libraries
+
 FROM alpine:latest
 
-ENV IS_DOCKER=true
-ENV STATPING_DIR=/app
-ENV PORT=8080
-ENV BASE_PATH=""
+ARG UID
+ARG GID
+ARG PORT
+ARG STATPING_DIR
+ARG BASE_PATH
+
+ENV PORT=${PORT}
+ENV STATPING_DIR=${STATPING_DIR}
+ENV BASE_PATH=${BASE_PATH}
+
+LABEL maintainer="Thien Tran contact@tommytran.io"
 
 RUN apk -U upgrade \
     && apk add ca-certificates curl jq libgcc libstdc++ sassc \
     && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
-COPY --from=backend /go/bin/statping /usr/local/bin/
-COPY --from=backend /usr/local/share/ca-certificates /usr/local/share/
+RUN --network=none \
+    addgroup -g ${GID} statping-ng \
+    && adduser -u ${UID} --ingroup statping-ng --disabled-password --system statping-ng
 
-WORKDIR /app
-VOLUME /app
+COPY --from=backend /install/statping /usr/local/bin/
 
-EXPOSE $PORT
+COPY --from=ghcr.io/polarix-containers/hardened_malloc:latest /install /usr/local/lib/
+ENV LD_PRELOAD="/usr/local/lib/libhardened_malloc.so"
 
-HEALTHCHECK --interval=60s --timeout=10s --retries=3 CMD if [ -z "$BASE_PATH" ]; then HEALTHPATH="/health"; else HEALTHPATH="/$BASE_PATH/health" ; fi && curl -s "http://localhost:80$HEALTHPATH" | jq -r -e ".online==true"
+USER statping-ng
+
+WORKDIR ${STATPING_DIR}
+VOLUME ${STATPING_DIR}
+
+EXPOSE $PORT/tcp
 
 CMD statping --port $PORT
+
+HEALTHCHECK --interval=60s --timeout=10s --retries=3 \
+    CMD if [ -z "${BASE_PATH}" ]; then HEALTHPATH="/health"; else HEALTHPATH="/${BASE_PATH}/health" ; fi && curl -s "http://localhost:80${HEALTHPATH}" | jq -r -e ".online==true"
