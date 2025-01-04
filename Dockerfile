@@ -1,7 +1,10 @@
 ARG VERSION=0.91.0
 
-FROM node:18-alpine AS frontend
+FROM node:16-alpine AS frontend
 ARG VERSION
+
+RUN apk -U upgrade \
+    && rm -rf /var/cache/apk/*
 
 WORKDIR /statping
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/package.json .
@@ -15,9 +18,11 @@ RUN yarn build && yarn cache clean
 FROM golang:alpine AS backend
 ARG VERSION
 
-RUN apk add --no-cache libstdc++ gcc g++ make git autoconf \
-    libtool ca-certificates linux-headers wget curl jq && \
-    update-ca-certificates
+RUN apk -U upgrade \
+    && apk add libstdc++ gcc g++ make git autoconf \
+        libtool ca-certificates linux-headers wget curl jq && \
+        update-ca-certificates \
+    && rm -rf /var/cache/apk/*
 
 WORKDIR /root
 RUN git clone --depth 1 --branch 3.6.2 https://github.com/sass/sassc.git
@@ -49,7 +54,9 @@ RUN chmod a+x statping && mv statping /go/bin/statping
 # Statping main Docker image that contains all required libraries
 FROM alpine:latest
 
-RUN apk --no-cache add libgcc libstdc++ ca-certificates curl jq && update-ca-certificates
+RUN apk -U upgrade \
+    && apk add libgcc libstdc++ ca-certificates curl jq && update-ca-certificates \
+    && rm -rf /var/cache/apk/*
 
 COPY --from=backend /go/bin/statping /usr/local/bin/
 COPY --from=backend /root/sassc/bin/sassc /usr/local/bin/
