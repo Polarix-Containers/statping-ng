@@ -29,6 +29,8 @@ ARG VERSION
 RUN apk -U upgrade \
     && rm -rf /var/cache/apk/*
 
+WORKDIR /go/src/github.com/statping-ng/statping-ng
+
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/go.mod .
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/go.sum .
 RUN go mod download
