@@ -4,7 +4,7 @@ ARG NODE=16
 ARG UID=3010
 ARG GID=3010
 
-FROM node:{NODE}-alpine AS frontend
+FROM node:${NODE}-alpine AS frontend
 ARG VERSION
 
 RUN apk -U upgrade \
