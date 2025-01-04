@@ -26,7 +26,7 @@ ARG VERSION
 ARG SASSC
 
 RUN apk -U upgrade \
-    && apk add build-base curl jq libtool linux-headers wget \
+    && apk add build-base curl git jq libtool wget \
     && rm -rf /var/cache/apk/*
 
 WORKDIR /root/sassc
