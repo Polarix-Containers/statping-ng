@@ -12,7 +12,7 @@ RUN yarn build && yarn cache clean
 
 # Statping Golang BACKEND building from source
 # Creates "/go/bin/statping" and "/usr/local/bin/sass" for copying
-FROM golang:1.20-alpine AS backend
+FROM golang:alpine AS backend
 ARG VERSION
 
 RUN apk add --no-cache libstdc++ gcc g++ make git autoconf \
