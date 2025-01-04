@@ -29,7 +29,8 @@ RUN apk -U upgrade \
 
 WORKDIR /root/sassc
 ADD https://github.com/sass/sassc.git#${SASSC} .
-RUN . sassc/script/bootstrap && make -C sassc -j4
+RUN . script/bootstrap \
+    && make -C sassc -j4
 # sassc binary: /root/sassc/bin/sassc
 
 WORKDIR /go/src/github.com/statping-ng/statping-ng
