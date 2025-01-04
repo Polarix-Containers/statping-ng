@@ -1,7 +1,10 @@
 ARG VERSION=0.91.0
 ARG SASSC=3.6.2
+ARG NODE=16
+ARG UID=3010
+ARG GID=3010
 
-FROM node:16-alpine AS frontend
+FROM node:{NODE}-alpine AS frontend
 ARG VERSION
 
 RUN apk -U upgrade \
@@ -11,6 +14,7 @@ WORKDIR /statping
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/package.json .
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/yarn.lock .
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:frontend .
+
 RUN yarn install --pure-lockfile \
     && yarn build \
     && yarn cache clean
@@ -22,9 +26,7 @@ ARG VERSION
 ARG SASSC
 
 RUN apk -U upgrade \
-    && apk add libstdc++ gcc g++ make git autoconf \
-        libtool ca-certificates linux-headers wget curl jq \
-    && update-ca-certificates \
+    && apk add build-base curl jq libtool linux-headers wget \
     && rm -rf /var/cache/apk/*
 
 WORKDIR /root/sassc
