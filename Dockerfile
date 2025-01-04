@@ -29,8 +29,6 @@ ARG VERSION
 RUN apk -U upgrade \
     && rm -rf /var/cache/apk/*
 
-WORKDIR /go/src/github.com/statping-ng/statping-ng
-
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/go.mod .
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/go.sum .
 RUN go mod download
@@ -47,6 +45,7 @@ COPY --from=frontend /install/dist/ ./source/dist/
 RUN go install github.com/GeertJohan/go.rice/rice@latest \
     && cd source \
     && rice embed-go \
+    && cd .. \
     && mkdir -p /install \
     && go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=$VERSION" -o /install/statping --tags "netgo linux" ./cmd \
     && chmod +x /install/statping
