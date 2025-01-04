@@ -1,5 +1,4 @@
 ARG VERSION=0.91.0
-ARG SASSC=3.6.2
 ARG NODE=16
 ARG UID=3010
 ARG GID=3010
@@ -19,21 +18,12 @@ RUN yarn install --pure-lockfile \
     && yarn build \
     && yarn cache clean
 
-# Statping Golang BACKEND building from source
-# Creates "/go/bin/statping" and "/usr/local/bin/sass" for copying
+
 FROM golang:alpine AS backend
 ARG VERSION
-ARG SASSC
 
 RUN apk -U upgrade \
-    && apk add build-base curl git jq libtool wget \
     && rm -rf /var/cache/apk/*
-
-WORKDIR /root/sassc
-ADD --keep-git-dir=true https://github.com/sass/sassc.git#${SASSC} .
-RUN . script/bootstrap \
-    && make -C sassc -j4
-# sassc binary: /root/sassc/bin/sassc
 
 WORKDIR /go/src/github.com/statping-ng/statping-ng
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/go.mod .
@@ -54,7 +44,6 @@ RUN cd source && rice embed-go
 RUN go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=$VERSION" -o statping --tags "netgo linux" ./cmd
 RUN chmod a+x statping && mv statping /go/bin/statping
 # /go/bin/statping - statping binary
-# /root/sassc/bin/sassc - sass binary
 # /statping - Vue frontend (from frontend)
 
 # Statping main Docker image that contains all required libraries
@@ -66,12 +55,11 @@ ENV PORT=8080
 ENV BASE_PATH=""
 
 RUN apk -U upgrade \
-    && apk add ca-certificates curl jq libgcc libstdc++ \
+    && apk add ca-certificates curl jq libgcc libstdc++ sassc \
     && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
 COPY --from=backend /go/bin/statping /usr/local/bin/
-COPY --from=backend /root/sassc/bin/sassc /usr/local/bin/
 COPY --from=backend /usr/local/share/ca-certificates /usr/local/share/
 
 WORKDIR /app
