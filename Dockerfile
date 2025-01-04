@@ -29,7 +29,7 @@ ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSI
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/go.sum .
 RUN go mod download
 ENV GO111MODULE on
-ENV CGO_ENABLED 1
+ENV CGO_ENABLED 0
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:cmd ./cmd
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:database ./database
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:handlers ./handlers
