@@ -1,4 +1,5 @@
 ARG VERSION=0.91.0
+ARG SASSC=3.6.2
 
 FROM node:16-alpine AS frontend
 ARG VERSION
@@ -9,23 +10,25 @@ RUN apk -U upgrade \
 WORKDIR /statping
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/package.json .
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/yarn.lock .
-RUN yarn install --pure-lockfile --network-timeout 1000000
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:frontend .
-RUN yarn build && yarn cache clean
+RUN yarn install --pure-lockfile \
+    && yarn build \
+    && yarn cache clean
 
 # Statping Golang BACKEND building from source
 # Creates "/go/bin/statping" and "/usr/local/bin/sass" for copying
 FROM golang:alpine AS backend
 ARG VERSION
+ARG SASSC
 
 RUN apk -U upgrade \
     && apk add libstdc++ gcc g++ make git autoconf \
-        libtool ca-certificates linux-headers wget curl jq && \
-        update-ca-certificates \
+        libtool ca-certificates linux-headers wget curl jq \
+    && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
-WORKDIR /root
-RUN git clone --depth 1 --branch 3.6.2 https://github.com/sass/sassc.git
+WORKDIR /root/sassc
+ADD https://github.com/sass/sassc.git#${SASSC}
 RUN . sassc/script/bootstrap && make -C sassc -j4
 # sassc binary: /root/sassc/bin/sassc
 
@@ -54,8 +57,15 @@ RUN chmod a+x statping && mv statping /go/bin/statping
 # Statping main Docker image that contains all required libraries
 FROM alpine:latest
 
+ENV IS_DOCKER=true
+ENV SASS=/usr/local/bin/sassc
+ENV STATPING_DIR=/app
+ENV PORT=8080
+ENV BASE_PATH=""
+
 RUN apk -U upgrade \
-    && apk add libgcc libstdc++ ca-certificates curl jq && update-ca-certificates \
+    && apk add libgcc libstdc++ ca-certificates curl jq \
+    && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
 COPY --from=backend /go/bin/statping /usr/local/bin/
@@ -64,12 +74,6 @@ COPY --from=backend /usr/local/share/ca-certificates /usr/local/share/
 
 WORKDIR /app
 VOLUME /app
-
-ENV IS_DOCKER=true
-ENV SASS=/usr/local/bin/sassc
-ENV STATPING_DIR=/app
-ENV PORT=8080
-ENV BASE_PATH=""
 
 EXPOSE $PORT
 
