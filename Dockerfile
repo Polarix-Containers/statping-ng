@@ -43,7 +43,9 @@ ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:types ./types
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:utils ./utils
 COPY --from=frontend /install/dist/ ./source/dist/
 RUN go install github.com/GeertJohan/go.rice/rice@latest \
-    && source/rice embed-go \
+    && cd source \
+    && rice embed-go \
+    && cd .. \
     && mkdir -p /install \
     && go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=$VERSION" -o /install/statping --tags "netgo linux" ./cmd \
     && chmod +x /install/statping
@@ -57,9 +59,9 @@ ARG PORT
 ARG STATPING_DIR
 ARG BASE_PATH
 
-ENV PORT=${PORT}
-ENV STATPING_DIR=${STATPING_DIR}
-ENV BASE_PATH=${BASE_PATH}
+ENV PORT ${PORT}
+ENV STATPING_DIR ${STATPING_DIR}
+ENV BASE_PATH ${BASE_PATH}
 
 LABEL maintainer="Thien Tran contact@tommytran.io"
 
