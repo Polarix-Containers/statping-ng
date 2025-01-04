@@ -1,6 +1,6 @@
 ARG VERSION=0.91.0
 
-FROM node:16-alpine AS frontend
+FROM node:alpine AS frontend
 ARG VERSION
 
 WORKDIR /statping
