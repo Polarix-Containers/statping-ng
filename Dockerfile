@@ -9,7 +9,8 @@ ARG VERSION
 RUN apk -U upgrade \
     && rm -rf /var/cache/apk/*
 
-WORKDIR /statping
+WORKDIR /install
+
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/package.json .
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/frontend/yarn.lock .
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:frontend .
@@ -25,7 +26,6 @@ ARG VERSION
 RUN apk -U upgrade \
     && rm -rf /var/cache/apk/*
 
-WORKDIR /go/src/github.com/statping-ng/statping-ng
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/go.mod .
 ADD https://raw.githubusercontent.com/statping-ng/statping-ng/refs/tags/v${VERSION}/go.sum .
 RUN go mod download
@@ -38,7 +38,7 @@ ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:notifiers ./notif
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:source ./source
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:types ./types
 ADD https://github.com/statping-ng/statping-ng.git#v${VERSION}:utils ./utils
-COPY --from=frontend /statping/dist/ ./source/dist/
+COPY --from=frontend /install/dist/ ./source/dist/
 RUN go install github.com/GeertJohan/go.rice/rice@latest
 RUN cd source && rice embed-go
 RUN go build -a -ldflags "-s -w -extldflags -static -X main.VERSION=$VERSION" -o statping --tags "netgo linux" ./cmd
