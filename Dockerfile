@@ -30,7 +30,7 @@ RUN apk -U upgrade \
     && rm -rf /var/cache/apk/*
 
 WORKDIR /root/sassc
-ADD https://github.com/sass/sassc.git#${SASSC} .
+ADD --keep-git-dir=true https://github.com/sass/sassc.git#${SASSC} .
 RUN . script/bootstrap \
     && make -C sassc -j4
 # sassc binary: /root/sassc/bin/sassc
@@ -61,13 +61,12 @@ RUN chmod a+x statping && mv statping /go/bin/statping
 FROM alpine:latest
 
 ENV IS_DOCKER=true
-ENV SASS=/usr/local/bin/sassc
 ENV STATPING_DIR=/app
 ENV PORT=8080
 ENV BASE_PATH=""
 
 RUN apk -U upgrade \
-    && apk add libgcc libstdc++ ca-certificates curl jq \
+    && apk add ca-certificates curl jq libgcc libstdc++ \
     && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
